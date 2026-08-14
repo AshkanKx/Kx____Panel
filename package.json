@@ -1,1 +1,12 @@
-
+{
+  "name": "kx-panel-bot",
+  "version": "1.0.0",
+  "description": "ASHKAN KX Telegram Panel Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3"
+  }
+}
