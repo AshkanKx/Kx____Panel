@@ -1,5 +1,6 @@
 const { Telegraf, Markup } = require("telegraf");
 const http = require("http");
+const fs = require("fs");
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 
@@ -17,6 +18,20 @@ const REQUIRED_CHANNELS = [
   "@AshkanKx",
   "@AshkanKx2"
 ];
+
+// ===============================
+// خواندن پنل‌ها
+// ===============================
+
+function loadPanels() {
+  try {
+    const data = fs.readFileSync("./panels.json", "utf8");
+    return JSON.parse(data);
+  } catch (error) {
+    console.log("Could not load panels.json:", error.message);
+    return {};
+  }
+}
 
 // ===============================
 // سرور Render
@@ -83,32 +98,85 @@ async function checkMembership(ctx) {
 }
 
 // ===============================
+// کیبورد عضویت
+// ===============================
+
+function membershipKeyboard() {
+  const buttons = REQUIRED_CHANNELS.map((channel) => [
+    Markup.button.url(
+      `📢 عضویت در ${channel}`,
+      `https://t.me/${channel.replace("@", "")}`
+    )
+  ]);
+
+  buttons.push([
+    Markup.button.callback(
+      "✅ بررسی عضویت",
+      "check_membership"
+    )
+  ]);
+
+  return Markup.inlineKeyboard(buttons);
+}
+
+// ===============================
+// ارسال پنل
+// ===============================
+
+async function sendPanel(ctx, panelCode) {
+  const panels = loadPanels();
+  const panel = panels[panelCode];
+
+  if (!panel) {
+    return ctx.reply(
+      "❌ این پنل پیدا نشد یا لینک آن اشتباه است."
+    );
+  }
+
+  await ctx.reply(
+    `📦 ${panel.name}\n\n` +
+    "⏳ در حال ارسال پنل..."
+  );
+
+  await ctx.replyWithDocument(panel.file_id, {
+    caption:
+      `🔥 ${panel.name}\n\n` +
+      "✅ پنل با موفقیت ارسال شد.\n" +
+      "❤️ ASHKAN KX"
+  });
+}
+
+// ===============================
 // /start
 // ===============================
 
-bot.start((ctx) => {
-  ctx.reply(
+bot.start(async (ctx) => {
+  const startPayload = ctx.startPayload;
+
+  // لینک اختصاصی پنل
+  if (startPayload) {
+    const panels = loadPanels();
+
+    if (panels[startPayload]) {
+      const isMember = await checkMembership(ctx);
+
+      if (!isMember) {
+        return ctx.reply(
+          "🔒 برای دریافت این پنل ابتدا باید عضو کانال‌های زیر بشی:",
+          membershipKeyboard()
+        );
+      }
+
+      return sendPanel(ctx, startPayload);
+    }
+  }
+
+  // /start معمولی
+  await ctx.reply(
     "🔥 به ASHKAN KX خوش اومدی!\n\n" +
     "🎮 مرکز دریافت پنل و تنظیمات KX\n\n" +
     "یکی از گزینه‌های زیر رو انتخاب کن:",
     mainMenu
-  );
-});
-
-// ===============================
-// دریافت ZIP و نمایش File ID
-// ===============================
-
-bot.on("document", async (ctx) => {
-  const document = ctx.message.document;
-
-  const fileId = document.file_id;
-  const fileName = document.file_name || "Unknown";
-
-  await ctx.reply(
-    "📦 فایل دریافت شد!\n\n" +
-    `📄 Name: ${fileName}\n\n` +
-    `🆔 File ID:\n${fileId}`
   );
 });
 
@@ -122,29 +190,14 @@ bot.action("download_panel", async (ctx) => {
   const isMember = await checkMembership(ctx);
 
   if (!isMember) {
-    const buttons = REQUIRED_CHANNELS.map((channel) => [
-      Markup.button.url(
-        `📢 عضویت در ${channel}`,
-        `https://t.me/${channel.replace("@", "")}`
-      )
-    ]);
-
-    buttons.push([
-      Markup.button.callback(
-        "✅ بررسی عضویت",
-        "check_membership"
-      )
-    ]);
-
     return ctx.reply(
       "🔒 برای دریافت پنل ابتدا باید عضو کانال‌های زیر بشی:",
-      Markup.inlineKeyboard(buttons)
+      membershipKeyboard()
     );
   }
 
   await ctx.reply(
-    "✅ عضویت تأیید شد!\n\n" +
-    "📥 پنل آماده دریافت است."
+    "📥 برای دریافت پنل، لینک اختصاصی همان ویدیو رو باز کن."
   );
 });
 
@@ -159,13 +212,14 @@ bot.action("check_membership", async (ctx) => {
 
   if (!isMember) {
     return ctx.reply(
-      "❌ هنوز عضو همه کانال‌های موردنیاز نیستی."
+      "❌ هنوز عضو همه کانال‌های موردنیاز نیستی.",
+      membershipKeyboard()
     );
   }
 
   await ctx.reply(
     "✅ عضویت تأیید شد!\n\n" +
-    "📥 حالا می‌تونی پنل رو دریافت کنی."
+    "حالا لینک پنل رو دوباره باز کن تا فایل برات ارسال بشه."
   );
 });
 
@@ -209,6 +263,23 @@ bot.action("support", async (ctx) => {
 });
 
 // ===============================
+// دریافت فایل و نمایش File ID
+// ===============================
+
+bot.on("document", async (ctx) => {
+  const document = ctx.message.document;
+
+  const fileId = document.file_id;
+  const fileName = document.file_name || "Unknown";
+
+  await ctx.reply(
+    "📦 فایل دریافت شد!\n\n" +
+    `📄 Name: ${fileName}\n\n` +
+    `🆔 File ID:\n${fileId}`
+  );
+});
+
+// ===============================
 // اجرای بات
 // ===============================
 
@@ -217,7 +288,7 @@ bot.launch();
 console.log("KX Panel Bot is running...");
 
 // ===============================
-// توقف صحیح بات
+// توقف صحیح
 // ===============================
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
