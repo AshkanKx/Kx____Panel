@@ -98,7 +98,7 @@ async function checkMembership(ctx) {
 }
 
 // ===============================
-// کیبورد عضویت
+// منوی عضویت اجباری
 // ===============================
 
 function membershipKeyboard() {
@@ -120,6 +120,27 @@ function membershipKeyboard() {
 }
 
 // ===============================
+// منوی لیست پنل‌ها
+// ===============================
+
+function panelsKeyboard() {
+  const panels = loadPanels();
+
+  const buttons = Object.keys(panels).map((code) => [
+    Markup.button.callback(
+      `📦 ${panels[code].name}`,
+      `panel_${code}`
+    )
+  ]);
+
+  buttons.push([
+    Markup.button.callback("🔙 بازگشت", "back_main")
+  ]);
+
+  return Markup.inlineKeyboard(buttons);
+}
+
+// ===============================
 // ارسال پنل
 // ===============================
 
@@ -129,7 +150,7 @@ async function sendPanel(ctx, panelCode) {
 
   if (!panel) {
     return ctx.reply(
-      "❌ این پنل پیدا نشد یا لینک آن اشتباه است."
+      "❌ این پنل پیدا نشد."
     );
   }
 
@@ -150,29 +171,8 @@ async function sendPanel(ctx, panelCode) {
 // /start
 // ===============================
 
-bot.start(async (ctx) => {
-  const startPayload = ctx.startPayload;
-
-  // لینک اختصاصی پنل
-  if (startPayload) {
-    const panels = loadPanels();
-
-    if (panels[startPayload]) {
-      const isMember = await checkMembership(ctx);
-
-      if (!isMember) {
-        return ctx.reply(
-          "🔒 برای دریافت این پنل ابتدا باید عضو کانال‌های زیر بشی:",
-          membershipKeyboard()
-        );
-      }
-
-      return sendPanel(ctx, startPayload);
-    }
-  }
-
-  // /start معمولی
-  await ctx.reply(
+bot.start((ctx) => {
+  ctx.reply(
     "🔥 به ASHKAN KX خوش اومدی!\n\n" +
     "🎮 مرکز دریافت پنل و تنظیمات KX\n\n" +
     "یکی از گزینه‌های زیر رو انتخاب کن:",
@@ -187,18 +187,46 @@ bot.start(async (ctx) => {
 bot.action("download_panel", async (ctx) => {
   await ctx.answerCbQuery();
 
-  const isMember = await checkMembership(ctx);
+  const panels = loadPanels();
+  const panelCount = Object.keys(panels).length;
 
-  if (!isMember) {
+  if (panelCount === 0) {
     return ctx.reply(
-      "🔒 برای دریافت پنل ابتدا باید عضو کانال‌های زیر بشی:",
-      membershipKeyboard()
+      "📥 فعلاً هیچ پنلی برای دریافت وجود نداره."
     );
   }
 
   await ctx.reply(
-    "📥 برای دریافت پنل، لینک اختصاصی همان ویدیو رو باز کن."
+    "📥 پنل موردنظرت رو انتخاب کن:",
+    panelsKeyboard()
   );
+});
+
+// ===============================
+// انتخاب پنل
+// ===============================
+
+bot.action(/^panel_(.+)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const panelCode = ctx.match[1];
+
+  const panels = loadPanels();
+
+  if (!panels[panelCode]) {
+    return ctx.reply("❌ این پنل پیدا نشد.");
+  }
+
+  const isMember = await checkMembership(ctx);
+
+  if (!isMember) {
+    return ctx.reply(
+      "🔒 برای دریافت این پنل ابتدا باید عضو کانال‌های زیر بشی:",
+      membershipKeyboard()
+    );
+  }
+
+  await sendPanel(ctx, panelCode);
 });
 
 // ===============================
@@ -217,9 +245,22 @@ bot.action("check_membership", async (ctx) => {
     );
   }
 
-  await ctx.reply(
+  return ctx.reply(
     "✅ عضویت تأیید شد!\n\n" +
-    "حالا لینک پنل رو دوباره باز کن تا فایل برات ارسال بشه."
+    "حالا از منوی 📥 دانلود پنل، پنل موردنظرت رو انتخاب کن."
+  );
+});
+
+// ===============================
+// بازگشت به منوی اصلی
+// ===============================
+
+bot.action("back_main", async (ctx) => {
+  await ctx.answerCbQuery();
+
+  await ctx.reply(
+    "🏠 منوی اصلی:",
+    mainMenu
   );
 });
 
