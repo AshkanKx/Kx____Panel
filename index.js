@@ -146,8 +146,8 @@ function panelsKeyboard() {
 
 bot.start((ctx) => {
   ctx.reply(
-    "🔥 به بات Kx خوش اومدی 😎\n\n" +
-    "یکی از گزینه هارو انتخاب کن: 💬",
+    "🔥 به بات Kx خوش اومدی 🔥\n\n" +
+    "💬 هر گزینه ای که میخوای رو انتخاب کن 💬",
     mainMenu
   );
 });
@@ -181,6 +181,7 @@ bot.action(/^panel_(.+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 
   const panelCode = ctx.match[1];
+
   const panels = loadPanels();
   const panel = panels[panelCode];
 
@@ -198,7 +199,7 @@ bot.action(/^panel_(.+)$/, async (ctx) => {
     );
   }
 
-  // پیام در حال ارسال
+  // پیام درحال ارسال
   const sendingMessage = await ctx.reply(
     `📦 پنل درحال ارسال : ${panel.name}`
   );
@@ -207,8 +208,15 @@ bot.action(/^panel_(.+)$/, async (ctx) => {
     // ارسال فایل
     await ctx.replyWithDocument(panel.file_id);
 
-    // حذف پیام «درحال ارسال»
-    await ctx.deleteMessage(sendingMessage.message_id);
+    // حذف پیام درحال ارسال
+    try {
+      await ctx.deleteMessage(sendingMessage.message_id);
+    } catch (error) {
+      console.log(
+        "Could not delete sending message:",
+        error.message
+      );
+    }
 
     // پیام اطلاعات پنل
     await ctx.reply(
@@ -218,9 +226,11 @@ bot.action(/^panel_(.+)$/, async (ctx) => {
     );
 
   } catch (error) {
-    console.log("Panel sending error:", error.message);
+    console.log(
+      "Panel sending error:",
+      error.message
+    );
 
-    // اگر پیام درحال ارسال هنوز وجود داشت، حذفش کن
     try {
       await ctx.deleteMessage(sendingMessage.message_id);
     } catch (e) {}
@@ -261,8 +271,8 @@ bot.action("back_main", async (ctx) => {
   await ctx.answerCbQuery();
 
   await ctx.reply(
-    "🔥 به بات Kx خوش اومدی 😎\n\n" +
-    "یکی از گزینه هارو انتخاب کن: 💬",
+    "🔥 به بات Kx خوش اومدی 🔥\n\n" +
+    "💬 هر گزینه ای که میخوای رو انتخاب کن 💬",
     mainMenu
   );
 });
