@@ -1,7 +1,11 @@
 {
-  "macro_v4": {
-    "name": "Macro V4",
-    "password": "MACRO V4",
-    "file_id": "BQACAgQAAxkBAAMian_2CTeo5bBaDLf00UKSCNJm3UIAAn4eAAIw4AABUE-koHy1aU4tPQQ"
+  "name": "kx-panel-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3"
   }
 }
