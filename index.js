@@ -120,7 +120,7 @@ function membershipKeyboard() {
 }
 
 // ===============================
-// منوی لیست پنل‌ها
+// منوی پنل‌ها
 // ===============================
 
 function panelsKeyboard() {
@@ -141,41 +141,13 @@ function panelsKeyboard() {
 }
 
 // ===============================
-// ارسال پنل
-// ===============================
-
-async function sendPanel(ctx, panelCode) {
-  const panels = loadPanels();
-  const panel = panels[panelCode];
-
-  if (!panel) {
-    return ctx.reply(
-      "❌ این پنل پیدا نشد."
-    );
-  }
-
-  await ctx.reply(
-    `📦 ${panel.name}\n\n` +
-    "⏳ در حال ارسال پنل..."
-  );
-
-  await ctx.replyWithDocument(panel.file_id, {
-    caption:
-      `🔥 ${panel.name}\n\n` +
-      "✅ پنل با موفقیت ارسال شد.\n" +
-      "❤️ ASHKAN KX"
-  });
-}
-
-// ===============================
 // /start
 // ===============================
 
 bot.start((ctx) => {
   ctx.reply(
-    "🔥 به ASHKAN KX خوش اومدی!\n\n" +
-    "🎮 مرکز دریافت پنل و تنظیمات KX\n\n" +
-    "یکی از گزینه‌های زیر رو انتخاب کن:",
+    "🔥 به بات Kx خوش اومدی 😎\n\n" +
+    "یکی از گزینه هارو انتخاب کن: 💬",
     mainMenu
   );
 });
@@ -188,9 +160,8 @@ bot.action("download_panel", async (ctx) => {
   await ctx.answerCbQuery();
 
   const panels = loadPanels();
-  const panelCount = Object.keys(panels).length;
 
-  if (panelCount === 0) {
+  if (Object.keys(panels).length === 0) {
     return ctx.reply(
       "📥 فعلاً هیچ پنلی برای دریافت وجود نداره."
     );
@@ -210,13 +181,14 @@ bot.action(/^panel_(.+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 
   const panelCode = ctx.match[1];
-
   const panels = loadPanels();
+  const panel = panels[panelCode];
 
-  if (!panels[panelCode]) {
+  if (!panel) {
     return ctx.reply("❌ این پنل پیدا نشد.");
   }
 
+  // بررسی عضویت
   const isMember = await checkMembership(ctx);
 
   if (!isMember) {
@@ -226,7 +198,37 @@ bot.action(/^panel_(.+)$/, async (ctx) => {
     );
   }
 
-  await sendPanel(ctx, panelCode);
+  // پیام در حال ارسال
+  const sendingMessage = await ctx.reply(
+    `📦 پنل درحال ارسال : ${panel.name}`
+  );
+
+  try {
+    // ارسال فایل
+    await ctx.replyWithDocument(panel.file_id);
+
+    // حذف پیام «درحال ارسال»
+    await ctx.deleteMessage(sendingMessage.message_id);
+
+    // پیام اطلاعات پنل
+    await ctx.reply(
+      `Name: ${panel.name}\n` +
+      `Password: ${panel.password}\n\n` +
+      `🔴 رمز فایل داخل ویدیو یوتیوب 🔴`
+    );
+
+  } catch (error) {
+    console.log("Panel sending error:", error.message);
+
+    // اگر پیام درحال ارسال هنوز وجود داشت، حذفش کن
+    try {
+      await ctx.deleteMessage(sendingMessage.message_id);
+    } catch (e) {}
+
+    await ctx.reply(
+      "❌ هنگام ارسال پنل مشکلی پیش اومد. دوباره تلاش کن."
+    );
+  }
 });
 
 // ===============================
@@ -245,9 +247,9 @@ bot.action("check_membership", async (ctx) => {
     );
   }
 
-  return ctx.reply(
+  await ctx.reply(
     "✅ عضویت تأیید شد!\n\n" +
-    "حالا از منوی 📥 دانلود پنل، پنل موردنظرت رو انتخاب کن."
+    "حالا از 📥 دانلود پنل، پنل موردنظرت رو انتخاب کن."
   );
 });
 
@@ -259,7 +261,8 @@ bot.action("back_main", async (ctx) => {
   await ctx.answerCbQuery();
 
   await ctx.reply(
-    "🏠 منوی اصلی:",
+    "🔥 به بات Kx خوش اومدی 😎\n\n" +
+    "یکی از گزینه هارو انتخاب کن: 💬",
     mainMenu
   );
 });
