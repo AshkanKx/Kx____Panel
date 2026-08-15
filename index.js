@@ -96,6 +96,23 @@ bot.start((ctx) => {
 });
 
 // ===============================
+// دریافت ZIP و نمایش File ID
+// ===============================
+
+bot.on("document", async (ctx) => {
+  const document = ctx.message.document;
+
+  const fileId = document.file_id;
+  const fileName = document.file_name || "Unknown";
+
+  await ctx.reply(
+    "📦 فایل دریافت شد!\n\n" +
+    `📄 Name: ${fileName}\n\n` +
+    `🆔 File ID:\n${fileId}`
+  );
+});
+
+// ===============================
 // دانلود پنل
 // ===============================
 
